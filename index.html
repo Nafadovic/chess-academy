@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chess Academy · أكاديمية الشطرنج</title>
+<style>
+:root{--bg:#eef2f5;--fg:#14202b;--card:#fff;--lt:#e3e9ef;--dk:#6b8aa8;--ac:#c47f00;--ok:#1f8a5b;--bad:#c0392b;--mut:#5a6b7a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#10171e;--fg:#e8eef3;--card:#1a2530;--lt:#c9d4de;--dk:#4f6d8a;--ac:#f0b429;--ok:#4cc790;--bad:#ff7a6b;--mut:#9fb0be}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Segoe UI",Tahoma,system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;max-width:980px;margin:auto}
+h1{font:700 1.4rem Georgia,"Times New Roman",serif;margin:0}
+button{font:inherit;cursor:pointer;border:1.5px solid var(--dk);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+button:hover{border-color:var(--ac)}button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+button.on{background:var(--ac);color:#111;border-color:var(--ac);font-weight:700}
+nav{display:flex;gap:8px;overflow-x:auto;padding:4px 18px 10px;max-width:980px;margin:auto}
+nav button{white-space:nowrap}
+main{display:flex;flex-wrap:wrap;gap:22px;padding:8px 18px 40px;max-width:980px;margin:auto;align-items:flex-start}
+#bw{flex:0 0 auto;width:min(100%,440px);margin:auto}
+#bd{display:grid;grid-template-columns:repeat(8,1fr);direction:ltr;border:3px solid var(--fg);border-radius:4px;overflow:hidden;aspect-ratio:1}
+.s{position:relative;display:flex;align-items:center;justify-content:center;font-size:min(8.4vw,38px);line-height:1;cursor:pointer;user-select:none;color:#111}
+.s.l{background:var(--lt)}.s.d{background:var(--dk)}
+.s.lm::before{content:"";position:absolute;inset:0;background:var(--ac);opacity:.35}
+.s.sel::before{content:"";position:absolute;inset:0;background:var(--ok);opacity:.45}
+.s.dot::after{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:var(--ok);opacity:.75}
+.s.cap::after{content:"";position:absolute;inset:6%;border-radius:50%;border:4px solid var(--bad)}
+.s i{position:absolute;font:600 10px sans-serif;opacity:.7;font-style:normal}
+.s i.f{right:3px;bottom:1px}.s i.r{left:3px;top:1px}
+#tx{flex:1 1 280px;min-width:260px}
+#tx h2{font:700 1.5rem Georgia,serif;margin:0 0 6px}
+#tx p{margin:0 0 12px;max-width:62ch}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+#msg{min-height:3em;padding:10px 12px;border-inline-start:5px solid var(--ac);background:var(--card);border-radius:6px}
+#msg.ok{border-color:var(--ok)}#msg.no{border-color:var(--bad)}
+.pn{font-size:1.4rem;padding:4px 12px}
+</style></head><body>
+<header><h1 id="ti"></h1><button id="lg" aria-label="Language"></button></header>
+<nav id="nv"></nav>
+<main><div id="bw"><div id="bd"></div></div><section id="tx"><h2 id="h"></h2><p id="d"></p><div class="row" id="ct"></div><div id="msg" role="status"></div></section></main>
+<script>
+const $=s=>document.getElementById(s),F='abcdefgh';
+const U={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
+const ST='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
+const L=[
+{t:['The board','الرقعة'],m:'c',p:ST,d:['64 squares: 8 files (a–h) and 8 ranks (1–8). White starts at the bottom, each side has 16 pieces, and a light square sits in each player’s right-hand corner. Practice: tap the square you are asked for.','64 مربعًا: 8 أعمدة (a–h) و8 صفوف (1–8). يبدأ الأبيض من الأسفل ولكل لاعب 16 قطعة، ويكون المربع الفاتح في الزاوية اليمنى. تدرّب: اضغط على المربع المطلوب.']},
+{t:['The pieces','القطع'],m:'p',p:'',d:['Pick a piece, tap it, then tap a dot to move. Red rings are captures. Total value helps you judge trades.','اختر قطعة ثم اضغط عليها ثم اضغط نقطة لتتحرك. الدوائر الحمراء تعني أسرًا. القيمة تساعدك على تقييم التبادلات.']},
+{t:['Special moves','حركات خاصة'],m:'s',p:'r3k2r/2Pp4/8/4P3/8/8/8/R3K2R',s:[
+['e1g1','Castling: the king jumps two squares toward a rook and the rook hops over. It tucks the king away safely. Allowed only if neither piece has moved, nothing is between them, and the king is not in check.','التبييت: يقفز الملك مربعين نحو القلعة وتقفز القلعة فوقه. يحمي الملك. يُسمح به فقط إذا لم تتحرك القطعتان ولا شيء بينهما والملك ليس في كش.'],
+['d7d5','Black pushes a pawn two squares, landing beside our pawn.','يتقدم الأسود ببيدق مربعين ويقف بجانب بيدقنا.'],
+['e5d6','En passant: right away, a pawn may capture that pawn as if it had moved only one square.','الأخذ بالمرور: فورًا يمكن لبيدقنا أسر ذلك البيدق كأنه تحرك مربعًا واحدًا فقط.'],
+['c7c8','Promotion: a pawn reaching the last rank becomes a queen, rook, bishop or knight (here a queen).','الترقية: البيدق الواصل للصف الأخير يصبح وزيرًا أو قلعة أو فيلًا أو حصانًا (هنا وزير).']],
+ d:['Three rules that surprise beginners. Step through them.','ثلاث قواعد تفاجئ المبتدئين. تابعها خطوة خطوة.']},
+{t:['Check & mate','الكش والمات'],m:'z',p:'6k1/5ppp/8/8/8/8/8/R5K1',a:['a1a8'],d:['Check: the king is attacked and must escape, block or capture. Checkmate: no escape — you win. Stalemate: no legal move but not in check — a draw. Puzzle: White to play, give checkmate in one.','كش: الملك مهدد ويجب أن يهرب أو يُحجب الهجوم أو يؤسر المهاجم. كش مات: لا مفر، وتفوز. التعادل بالجمود: لا حركة قانونية والملك ليس في كش. لغز: دور الأبيض، اعمل كش مات في نقلة.']},
+{t:['Openings','الافتتاحيات'],m:'s',p:ST,s:[
+['e2e4','1. Take the centre with a pawn and open lines for queen and bishop.','1. سيطر على المركز ببيدق وافتح الطريق للوزير والفيل.'],
+['e7e5','Black claims the centre too.','الأسود يطالب بالمركز أيضًا.'],
+['g1f3','2. Develop a knight, attacking e5.','2. طوّر حصانًا يهاجم e5.'],
+['b8c6','Black defends and develops.','الأسود يدافع ويطوّر.'],
+['f1c4','3. Develop the bishop toward f7. Next: castle early.','3. طوّر الفيل نحو f7. بعدها بيّت مبكرًا.'],
+['g8f6','Black develops. Rules: control the centre, develop knights and bishops, castle, do not move the queen early.','الأسود يطوّر. القواعد: السيطرة على المركز، تطوير الأحصنة والفيلة، التبييت، وعدم تحريك الوزير مبكرًا.']],
+ d:['Play the first moves of a classic game, the Italian Game.','العب أولى نقلات لعبة كلاسيكية: الافتتاحية الإيطالية.']},
+{t:['Tactics','التكتيك'],m:'z',p:'r3k3/8/8/1N6/8/8/8/4K3',a:['b5c7'],d:['Tactics win material. A fork attacks two pieces at once; a pin freezes a piece in front of a more valuable one; a skewer forces the big piece to move first. Puzzle: find the knight fork that wins the rook.','التكتيك يربح المادة. الشوكة تهاجم قطعتين معًا؛ التثبيت يشلّ قطعة أمام قطعة أغلى؛ الاختراق يجبر القطعة الكبيرة على التحرك أولًا. لغز: جد شوكة الحصان التي تربح القلعة.']},
+{t:['Endgame','النهاية'],m:'z',p:'7k/Q7/5K2/8/8/8/8/8',a:['a7g7'],d:['With few pieces left, the king becomes active. Push passed pawns to promote, use the opposition, and learn to mate with king and queen or rook. Puzzle: checkmate in one — the queen must be protected by the king.','مع قلة القطع يصبح الملك نشيطًا. ادفع البيادق الحرة للترقية، واستخدم المعارضة، وتعلّم المات بالملك والوزير أو القلعة. لغز: كش مات في نقلة — الوزير محمي بالملك.']},
+{t:['Mate in one','مات في نقلة'],m:'z',q:[{p:'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR',a:['h5f7']},{p:'7k/8/6K1/8/8/8/8/R7',a:['a1a8']},{p:'6rk/6pp/8/6N1/8/8/8/4K3',a:['g5f7']},{p:'7k/R7/8/8/8/8/8/1R4K1',a:['b1b8']}],d:['Four checkmate-in-one puzzles: the Scholar’s Mate finish, the king-and-rook mate, the smothered mate with a knight, and the rook ladder. White to play. Use Next puzzle to move on.','أربعة ألغاز كش مات في نقلة: نهاية مات المدرسة، مات الملك والقلعة، المات الخانق بالحصان، وسلّم القلعتين. دور الأبيض. استخدم «اللغز التالي» للانتقال.']},
+{t:['Tactics II','التكتيك ٢'],m:'z',q:[{p:'q3k3/8/8/3N4/8/8/8/4K3',a:['d5c7']},{p:'5q2/8/3k4/8/8/8/3B4/6K1',a:['d2b4']},{p:'3r2k1/5ppp/8/8/8/8/5PPP/3R2K1',a:['d1d8']}],d:['Three more tactics: fork a king and queen with the knight, skewer the king to win the queen, and capture with checkmate.','ثلاثة تكتيكات أخرى: شوكة الحصان على الملك والوزير، اختراق الملك لربح الوزير، والأسر مع كش مات.']},
+{t:['Endgame II','النهاية ٢'],m:'z',q:[{p:'8/4P3/8/8/8/8/k7/4K3',a:['e7e8']},{p:'4k3/8/4K3/8/8/8/8/R7',a:['a1a8']},{p:'k7/8/1K6/8/8/8/8/6Q1',a:['g1g8']}],d:['Three finishing patterns: promote the pawn, mate with the rook, mate with the queen. In each, the king helps by covering escape squares.','ثلاثة أنماط للإنهاء: ترقية البيدق، مات بالقلعة، ومات بالوزير. في كل منها يساعد الملك بتغطية مربعات الهروب.']},
+{t:['Scholar’s Mate','مات المدرسة'],m:'s',p:ST,s:[['e2e4','Open with the centre pawn.','ابدأ ببيدق المركز.'],['e7e5','Black copies.','الأسود يقلّد.'],['d1h5','The queen eyes f7, Black’s weakest point (guarded only by the king).','الوزير يستهدف f7 وهي أضعف نقطة عند الأسود (يحميها الملك فقط).'],['b8c6','Black develops but ignores the threat.','الأسود يطوّر ويتجاهل الخطر.'],['f1c4','The bishop adds a second attacker on f7.','الفيل يضيف مهاجمًا ثانيًا على f7.'],['g8f6','A mistake: this attacks the queen but does not defend f7.','خطأ: يهاجم الوزير لكنه لا يحمي f7.'],['h5f7','Qxf7# — checkmate in four moves! To defend, play ...g6 or ...Qe7 and develop with care.','Qxf7# — كش مات في أربع نقلات! للدفاع العب ...g6 أو ...Qe7 وطوّر بحذر.']],d:['A famous four-move trap. Learn it to spot it, and to avoid falling for it.','فخ شهير من أربع نقلات. تعلّمه لتكتشفه ولا تقع فيه.']},
+{t:['Strategy','الاستراتيجية'],m:'t',p:ST,d:['A simple plan wins games: 1) control the centre; 2) develop every piece, then castle; 3) keep your king safe and your pieces protected; 4) before every move ask what your opponent threatens; 5) trade pieces when ahead and avoid trades when behind. A game is drawn by stalemate, agreement, threefold repetition, too little material to mate, or 50 moves with no capture or pawn move.','خطة بسيطة تربح المباريات: 1) سيطر على المركز؛ 2) طوّر كل القطع ثم بيّت؛ 3) أمّن ملكك واحمِ قطعك؛ 4) قبل كل نقلة اسأل ماذا يهدد خصمي؛ 5) بادل القطع عندما تتفوق وتجنب التبادل عندما تتأخر. تنتهي اللعبة بالتعادل بالجمود أو الاتفاق أو تكرار الوضع ثلاث مرات أو قلة المادة أو 50 نقلة بلا أسر أو تحريك بيدق.']},
+{t:['Play!','العب!'],m:'y',p:ST,d:['Now put it all together: you are White against the computer (switch to 2 players if you prefer). Illegal moves are blocked and check, mate and stalemate are detected (castling and en passant are in lesson 3). Think: centre, development, safety, tactics.','والآن اجمع كل شيء: أنت الأبيض ضد الحاسوب (أو بدّله للعب لاعبين). الحركات غير القانونية ممنوعة ويُكتشف الكش والمات والجمود (التبييت والأخذ بالمرور في الدرس 3). فكّر: المركز، التطوير، الأمان، التكتيك.']}];
+const PI={K:['King ♔ — one square in any direction. Lose it and the game ends. Value: priceless.','الملك — خطوة واحدة في أي اتجاه. إن خسرته انتهت اللعبة. قيمته: لا تُقدّر.'],Q:['Queen ♕ — any distance straight or diagonal. Value 9.','الوزير — أي مسافة أفقيًا أو عموديًا أو قطريًا. قيمته 9.'],R:['Rook ♖ — any distance along ranks and files. Value 5.','القلعة — أي مسافة أفقيًا أو عموديًا. قيمتها 5.'],B:['Bishop ♗ — any distance diagonally, always on one colour. Value 3.','الفيل — قطريًا لأي مسافة ويبقى على لون واحد. قيمته 3.'],N:['Knight ♘ — an L-shape, and it jumps over pieces. Value 3.','الحصان — حركة L ويقفز فوق القطع. قيمته 3.'],P:['Pawn ♙ — forward one (two from its first square), captures diagonally. Value 1.','البيدق — للأمام خطوة (خطوتان من مكانه الأول) ويأسر قطريًا. قيمته 1.']};
+const X={ti:['Chess Academy','أكاديمية الشطرنج'],lg:['العربية','English'],rs:['Reset','إعادة'],bk:['Back','السابق'],nx:['Next','التالي'],go:['Find','جد'],ok:['Correct!','صحيح!'],no:['Not quite — try another move.','ليس تمامًا — جرّب نقلة أخرى.'],mate:['Checkmate! Game over.','كش مات! انتهت اللعبة.'],st:['Stalemate — a draw.','جمود — تعادل.'],ck:['Check!','كش!'],w:['White to move','دور الأبيض'],bl:['Black to move','دور الأسود'],sc:['Score','النتيجة'],np:['Next puzzle','اللغز التالي'],cp:['vs Computer','ضد الحاسوب'],tp:['2 players','لاعبان']};
+let qi=0,vs=1,lang='en',li=0,b,sel=null,mv=[],last=[],M,turn='w',step=0,tg='',score=0,pc='N',msg='',cls='';
+const t=a=>a[lang=='en'?0:1],sq=n=>(8-n[1])*8+F.indexOf(n[0]),W=c=>c==c.toUpperCase();
+const fen=s=>{let a=[];for(const c of s)if(c!='/')+c?a.push(...Array(+c).fill('')):a.push(c);return a};
+function gen(b,i){const p=b[i],w=W(p),T=p.toUpperCase(),x=i%8,y=i>>3,o=[];
+const ad=(nx,ny)=>{if(nx<0||nx>7||ny<0||ny>7)return 0;const j=ny*8+nx,q=b[j];if(!q){o.push(j);return 1}if(W(q)!=w)o.push(j);return 0};
+if(T=='P'){const d=w?-1:1,n=i+d*8;if(n>=0&&n<64){if(!b[n]){o.push(n);if(y==(w?6:1)&&!b[n+d*8])o.push(n+d*8)}for(const dx of[-1,1]){const q=b[n+dx];if(x+dx>=0&&x+dx<8&&q&&W(q)!=w)o.push(n+dx)}}}
+else if(T=='N')for(const[a,c]of[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]])ad(x+a,y+c);
+else{const D=[[1,0],[-1,0],[0,1],[0,-1]],G=[[1,1],[1,-1],[-1,1],[-1,-1]],ds=T=='R'?D:T=='B'?G:D.concat(G);
+for(const[a,c]of ds)for(let k=1;k<8;k++){if(!ad(x+a*k,y+c*k)||T=='K')break}}
+return o}
+const inChk=(b,w)=>{const k=b.indexOf(w?'K':'k');return k>=0&&b.some((p,i)=>p&&W(p)!=w&&gen(b,i).includes(k))};
+function mk(b,i,j){const p=b[i],T=p.toUpperCase();
+if(T=='K'&&Math.abs(j%8-i%8)==2){const a=j>i?i+3:i-4;b[j>i?i+1:i-1]=b[a];b[a]=''}
+if(T=='P'&&i%8!=j%8&&!b[j])b[(i>>3)*8+j%8]='';
+b[j]=p;b[i]='';if(p=='P'&&j<8)b[j]='Q';if(p=='p'&&j>55)b[j]='q'}
+const leg=(b,i)=>gen(b,i).filter(j=>{const c=b.slice();mk(c,i,j);return!inChk(c,W(b[i]))});
+const cur=()=>{const l=L[li];return l.q?l.q[qi]:l};
+const VA={P:1,N:3,B:3,R:5,Q:9,K:0};
+const allM=(b,w)=>{const o=[];b.forEach((p,i)=>{if(p&&W(p)==w)leg(b,i).forEach(j=>o.push([i,j]))});return o};
+function ev(b){let s=0;b.forEach((p,i)=>{if(p){let v=VA[p.toUpperCase()];if(p.toUpperCase()!='K'){const x=i%8,y=i>>3;if(x>1&&x<6&&y>1&&y<6)v+=.2}s+=W(p)?v:-v}});return s}
+function mm(b,w,d,a,z){const ms=allM(b,w);if(!ms.length)return inChk(b,w)?(w?-99:99):0;if(!d)return ev(b);let best=w?-1e3:1e3;for(const[i,j]of ms){const c=b.slice();mk(c,i,j);const v=mm(c,!w,d-1,a,z);if(w){best=Math.max(best,v);a=Math.max(a,v)}else{best=Math.min(best,v);z=Math.min(z,v)}if(z<=a)break}return best}
+function cpu(){if(M!='y'||turn!='b')return;let bs=1e3,bm=null;for(const[i,j]of allM(b,false)){const c=b.slice();mk(c,i,j);const v=mm(c,true,1,-1e3,1e3)+Math.random()*.15;if(v<bs){bs=v;bm=[i,j]}}if(bm){mk(b,bm[0],bm[1]);last=bm;aft();draw()}}
+function aft(){turn=turn=='w'?'b':'w';const w=turn=='w',any=b.some((q,k)=>q&&W(q)==w&&leg(b,k).length),c=inChk(b,w);msg=!any?t(c?X.mate:X.st):c?t(X.ck):'';cls=!any?'ok':'';if(vs&&turn=='b'&&any)setTimeout(cpu,300)}
+function setP(c){pc=c;b=fen(c=='P'?'8/8/8/8/8/3p1p2/4P3/8':'8/3p2p1/8/8/3'+c+'4/8/8/8');sel=b.indexOf(c);mv=leg(b,sel);last=[];msg=t(PI[c]);cls=''}
+function nt(){tg=F[Math.random()*8|0]+(1+Math.random()*8|0)}
+function load(){const l=L[li];M=l.m;b=fen(cur().p);sel=null;mv=[];last=[];step=0;turn='w';msg='';cls='';
+if(M=='p')setP(pc);if(M=='c'){nt();msg=t(X.go)+' '+tg}draw()}
+function seek(n){const s=L[li].s;step=n;b=fen(L[li].p);last=[];for(let k=0;k<n;k++){const m=s[k][0];last=[sq(m.slice(0,2)),sq(m.slice(2))];mk(b,last[0],last[1])}msg=n?t(s[n-1].slice(1)):'';draw()}
+function clk(i){const p=b[i];
+if(M=='c'){const n=F[i%8]+(8-(i>>3));if(n==tg){score++;cls='ok';nt();msg=t(X.ok)+' '+t(X.go)+' '+tg}else{cls='no';msg=t(X.no).split('—')[0]+'('+n+') '+t(X.go)+' '+tg}draw();return}
+if(M=='s'||M=='t'||(M=='y'&&vs&&turn=='b'))return;
+if(sel!=null&&mv.includes(i)){go(i);return}
+if(p&&(M=='y'?W(p)==(turn=='w'):W(p))){sel=i;mv=leg(b,i)}else{sel=null;mv=[]}
+draw()}
+function go(j){
+if(M=='z'){if(cur().a.includes(F[sel%8]+(8-(sel>>3))+F[j%8]+(8-(j>>3)))){cls='ok';msg=t(X.ok)}else{cls='no';msg=t(X.no);sel=null;mv=[];draw();return}}
+mk(b,sel,j);last=[sel,j];
+if(M=='y')aft();
+sel=M=='p'?j:null;mv=M=='p'?leg(b,j):[];draw()}
+function draw(){
+$('ti').textContent=t(X.ti);$('lg').textContent=t(X.lg);
+document.documentElement.lang=lang;document.documentElement.dir=lang=='ar'?'rtl':'ltr';
+$('nv').innerHTML='';L.forEach((l,k)=>{const e=document.createElement('button');e.textContent=(k+1)+'. '+t(l.t);if(k==li)e.className='on';e.onclick=()=>{li=k;qi=0;load()};$('nv').append(e)});
+const l=L[li];$('h').textContent=(li+1)+'. '+t(l.t);$('d').textContent=t(l.d);
+let h='';const bt=(id,txt,cl)=>{const e=document.createElement('button');e.textContent=txt;if(cl)e.className=cl;e.onclick=()=>id();$('ct').append(e)};
+$('ct').innerHTML='';
+if(M=='p')'KQRBNP'.split('').forEach(c=>bt(()=>{setP(c);draw()},U[c],'pn'+(c==pc?' on':'')));
+if(M=='s'){bt(()=>step>0&&seek(step-1),'◀ '+t(X.bk));bt(()=>step<l.s.length&&seek(step+1),t(X.nx)+' ▶');bt(()=>seek(0),t(X.rs))}
+if(M=='z'||M=='p'||M=='y')bt(load,'↺ '+t(X.rs));if(M=='z'&&l.q)bt(()=>{qi=(qi+1)%l.q.length;load()},t(X.np)+' ('+(qi+1)+'/'+l.q.length+')');if(M=='y')bt(()=>{vs=!vs;load()},vs?'🤖 '+t(X.cp):'👥 '+t(X.tp),vs?'on':'');
+if(M=='c'){const s=document.createElement('span');s.textContent=t(X.sc)+': '+score;$('ct').append(s)}
+const mm=$('msg');mm.className=cls;mm.textContent=M=='y'&&!msg?t(turn=='w'?X.w:X.bl):(M=='y'?t(turn=='w'?X.w:X.bl)+' — '+msg:msg);
+const bd=$('bd');bd.innerHTML='';
+for(let i=0;i<64;i++){const e=document.createElement('div'),x=i%8,y=i>>3;
+e.className='s '+((x+y)%2?'d':'l')+(last.includes(i)?' lm':'')+(i==sel?' sel':'')+(mv.includes(i)?(b[i]?' cap':' dot'):'');
+e.textContent=b[i]?U[b[i]]:'';
+if(x==0)e.insertAdjacentHTML('beforeend','<i class="r">'+(8-y)+'</i>');if(y==7)e.insertAdjacentHTML('beforeend','<i class="f">'+F[x]+'</i>');
+e.onclick=()=>clk(i);bd.append(e)}}
+$('lg').onclick=()=>{lang=lang=='en'?'ar':'en';if(M=='c')msg=t(X.go)+' '+tg;if(M=='p')msg=t(PI[pc]);if(M=='s')seek(step);else draw()};
+load();
+</script></body></html>
